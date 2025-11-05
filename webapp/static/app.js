@@ -7,10 +7,10 @@ function updatePrevLabel(input){
   const prev = input.getAttribute('data-prev');
   const label = input.parentElement.querySelector('small.prev');
   if(!label) return;
-  const cur = input.name.match(/base_sqft_price|amenties_and_premiums|amount_received|land_sqyards/)
+  const cur = input.name.match(/base_sqft_price|amenties_and_premiums|amount_received/)
     ? formatCurrency(parseCurrency(input.value))
     : (input.value || '');
-  const prevDisp = input.name.match(/base_sqft_price|amenties_and_premiums|amount_received|land_sqyards/)
+  const prevDisp = input.name.match(/base_sqft_price|amenties_and_premiums|amount_received/)
     ? formatCurrency(parseCurrency(prev))
     : (prev || '');
   if(prev !== null && prev !== undefined && cur.toString() !== (prev || '').toString()){
@@ -26,7 +26,7 @@ function initEditForm(){
   const form = document.getElementById('crmEditForm');
   if(!form) return;
   // Currency inputs formatting
-  ['base_sqft_price','amenties_and_premiums','amount_received','land_sqyards'].forEach(name=>{
+  ['base_sqft_price','amenties_and_premiums','amount_received'].forEach(name=>{
     const el = form[name];
     if(!el) return;
     el.addEventListener('blur', ()=> { formatInputCurrency(el); updatePrevLabel(el); calcEditTotals(form); });
@@ -35,7 +35,7 @@ function initEditForm(){
   });
   // Other fields previous display
   Array.from(form.querySelectorAll('input,select,textarea')).forEach(el=>{
-    if(el.name && !['base_sqft_price','amenties_and_premiums','amount_received','land_sqyards'].includes(el.name)){
+    if(el.name && !['base_sqft_price','amenties_and_premiums','amount_received'].includes(el.name)){
       el.addEventListener('input', ()=> updatePrevLabel(el));
     }
     updatePrevLabel(el);
@@ -48,9 +48,11 @@ function calcEditTotals(form){
   const base = parseCurrency(form.base_sqft_price.value);
   const prem = parseCurrency(form.amenties_and_premiums.value);
   const received = parseCurrency(form.amount_received.value);
+  const paymentsNode = document.getElementById('payments_total');
+  const extraPaid = paymentsNode ? parseCurrency(paymentsNode.getAttribute('data-value')) : 0;
   const tos = (form.type_of_sale.value||'').toUpperCase();
   const total = (base + prem) * land;
-  const balance = total - received;
+  const balance = total - (received + extraPaid);
   const byPlan = tos==='OTP' ? balance : (total*0.20) - balance;
   document.getElementById('edit_total_sale_price').textContent = formatCurrency(total);
   document.getElementById('edit_balance_amount').textContent = formatCurrency(balance);
@@ -93,6 +95,16 @@ function showErrors(list){
 
 function validateForm(form){
   const errors=[];
+  // Required fields
+  const required = [
+    'booking_date','project','spg_praneeth','type_of_sale','buyer_name','land_sqyards','base_sqft_price'
+  ];
+  required.forEach(name=>{
+    const el = form[name];
+    if(el && (el.value===undefined || el.value===null || String(el.value).trim()==='')){
+      errors.push(`${name} is required`);
+    }
+  });
   const spg = form.spg_praneeth.value.trim();
   if(spg!=="SPG" && spg!=="Praneeth"){ errors.push('spg_praneeth must be SPG or Praneeth'); }
   const tos = (form.type_of_sale.value||'').toUpperCase();
@@ -105,15 +117,17 @@ function validateForm(form){
 function initCrmForm(){
   const form = document.getElementById('crmForm');
   if(!form) return;
+  const submitBtn = form.querySelector('button[type="submit"]');
   // Currency inputs formatting
-  ['base_sqft_price','amenties_and_premiums','amount_received','land_sqyards'].forEach(name=>{
+  ['base_sqft_price','amenties_and_premiums','amount_received'].forEach(name=>{
     const el = form[name];
     if(!el) return;
-    el.addEventListener('blur', ()=> { formatInputCurrency(el); calcTotals(form); showErrors(validateForm(form)); });
+    el.addEventListener('blur', ()=> { formatInputCurrency(el); calcTotals(form); const errs=validateForm(form); showErrors(errs); if(submitBtn) submitBtn.disabled = errs.length>0; });
     el.addEventListener('focus', ()=> { el.value = parseCurrency(el.value) || ''; });
   });
-  const onInput = ()=>{ calcTotals(form); showErrors(validateForm(form)); };
+  const onInput = ()=>{ calcTotals(form); const errs=validateForm(form); showErrors(errs); if(submitBtn) submitBtn.disabled = errs.length>0; };
   form.addEventListener('input', onInput);
+  if(submitBtn) submitBtn.disabled = true;
   onInput();
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
@@ -123,7 +137,10 @@ function initCrmForm(){
     const res = await fetch(window.location.pathname, { method:'POST', body: fd });
     const data = await res.json();
     if(!data.ok){ showErrors(data.errors||['Unknown error']); }
-    else{ window.location.href = '/crm/new?saved=1'; }
+    else{
+      const redirectUrl = form.getAttribute('data-success-redirect') || '/crm/new?saved=1';
+      window.location.href = redirectUrl;
+    }
   });
 }
 

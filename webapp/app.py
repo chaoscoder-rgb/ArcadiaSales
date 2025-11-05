@@ -120,6 +120,28 @@ def compute_totals(base, prem, land, received, tos):
     by_plan = balance if tos == 'OTP' else (total * 0.20) - balance
     return total, balance, by_plan
 
+# Payments table
+def ensure_payments_table():
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sale_rowid INTEGER NOT NULL,
+                paid_date DATE NOT NULL,
+                amount REAL NOT NULL,
+                note TEXT
+            )
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+ensure_payments_table()
+
 @app.route('/')
 def index():
     user = current_user()
@@ -237,7 +259,7 @@ def crm_new():
 def crm_list():
     user = current_user()
     sort = request.args.get('sort','date_desc')
-    order_clause = "(booking_date IS NULL) ASC, booking_date DESC, s_no"
+    order_clause = "(booking_date IS NULL) ASC, booking_date DESC, rowid DESC"
     if sort == 'sno_desc':
         order_clause = "s_no DESC"
     elif sort == 'total_desc':
@@ -321,7 +343,12 @@ def crm_edit(rowid):
                 return redirect(url_for('crm_list'))
             cols = [d[0] for d in cur.description]
             rec = dict(zip(cols, row))
-            return render_template('crm_edit.html', row=rec, user=user)
+            # payments
+            cur.execute("SELECT paid_date, amount, note FROM payments WHERE sale_rowid = ? ORDER BY paid_date DESC, id DESC", (rowid,))
+            payments = cur.fetchall()
+            cur.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE sale_rowid = ?", (rowid,))
+            pay_total = cur.fetchone()[0] or 0
+            return render_template('crm_edit.html', row=rec, user=user, payments=payments, payments_total=pay_total)
     finally:
         conn.close()
 
@@ -649,7 +676,86 @@ def admin_edit(rowid):
                 return redirect(url_for('admin_entries'))
             cols = [d[0] for d in cur.description]
             rec = dict(zip(cols, row))
-            return render_template('crm_edit.html', row=rec, user=user)
+            # payments
+            cur.execute("SELECT paid_date, amount, note FROM payments WHERE sale_rowid = ? ORDER BY paid_date DESC, id DESC", (rowid,))
+            payments = cur.fetchall()
+            cur.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE sale_rowid = ?", (rowid,))
+            pay_total = cur.fetchone()[0] or 0
+            return render_template('crm_edit.html', row=rec, user=user, payments=payments, payments_total=pay_total)
+
+# Add payment (CRM)
+@app.route('/crm/edit/<int:rowid>/add_payment', methods=['POST'])
+@login_required(role='CRM')
+def crm_add_payment(rowid):
+    user = current_user()
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        # Ownership check
+        cur.execute("SELECT total_sale_price, amount_received, type_of_sale FROM sale_details WHERE rowid = ? AND crm_name = ?", (rowid, user.username))
+        row = cur.fetchone()
+        if not row:
+            flash('Not found or unauthorized', 'error')
+            return redirect(url_for('crm_list'))
+        total_sale_price, amount_received, tos = row[0] or 0, row[1] or 0, (row[2] or '').upper()
+        paid_date = request.form.get('paid_date') or datetime.today().strftime('%Y-%m-%d')
+        amount = request.form.get('amount') or '0'
+        note = request.form.get('note')
+        try:
+            amt = float(re.sub(r"[^0-9.-]", "", amount) or 0)
+        except:
+            amt = 0
+        if amt <= 0:
+            flash('Amount must be positive', 'error')
+            return redirect(url_for('crm_edit', rowid=rowid))
+        cur.execute("INSERT INTO payments(sale_rowid, paid_date, amount, note) VALUES(?,?,?,?)", (rowid, paid_date, amt, note))
+        # recompute balances using amount_received + sum(payments)
+        cur.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE sale_rowid = ?", (rowid,))
+        pay_sum = cur.fetchone()[0] or 0
+        effective_received = (amount_received or 0) + pay_sum
+        balance = (total_sale_price or 0) - effective_received
+        by_plan = balance if tos == 'OTP' else (total_sale_price * 0.20) - balance
+        cur.execute("UPDATE sale_details SET balance_amount = ?, balance_tobe_received_by_plan_approval = ? WHERE rowid = ?", (balance, by_plan, rowid))
+        conn.commit()
+        flash('Payment added', 'success')
+        return redirect(url_for('crm_edit', rowid=rowid))
+    finally:
+        conn.close()
+
+# Add payment (Admin)
+@app.route('/admin/edit/<int:rowid>/add_payment', methods=['POST'])
+@login_required(role='ADMIN')
+def admin_add_payment(rowid):
+    user = current_user()
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT total_sale_price, amount_received, type_of_sale FROM sale_details WHERE rowid = ? AND crm_name = ?", (rowid, user.username))
+        row = cur.fetchone()
+        if not row:
+            flash('Not found or unauthorized', 'error')
+            return redirect(url_for('admin_entries'))
+        total_sale_price, amount_received, tos = row[0] or 0, row[1] or 0, (row[2] or '').upper()
+        paid_date = request.form.get('paid_date') or datetime.today().strftime('%Y-%m-%d')
+        amount = request.form.get('amount') or '0'
+        note = request.form.get('note')
+        try:
+            amt = float(re.sub(r"[^0-9.-]", "", amount) or 0)
+        except:
+            amt = 0
+        if amt <= 0:
+            flash('Amount must be positive', 'error')
+            return redirect(url_for('admin_edit', rowid=rowid))
+        cur.execute("INSERT INTO payments(sale_rowid, paid_date, amount, note) VALUES(?,?,?,?)", (rowid, paid_date, amt, note))
+        cur.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE sale_rowid = ?", (rowid,))
+        pay_sum = cur.fetchone()[0] or 0
+        effective_received = (amount_received or 0) + pay_sum
+        balance = (total_sale_price or 0) - effective_received
+        by_plan = balance if tos == 'OTP' else (total_sale_price * 0.20) - balance
+        cur.execute("UPDATE sale_details SET balance_amount = ?, balance_tobe_received_by_plan_approval = ? WHERE rowid = ?", (balance, by_plan, rowid))
+        conn.commit()
+        flash('Payment added', 'success')
+        return redirect(url_for('admin_edit', rowid=rowid))
     finally:
         conn.close()
 

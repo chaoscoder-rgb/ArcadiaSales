@@ -98,6 +98,51 @@
 
   <button class="btn" type="submit">Save</button>
 </form>
+
+<div class="grid-two" style="margin-top:12px">
+  <section class="card">
+    <h3>Payment History</h3>
+    <p>Total Additional Paid: <strong id="payments_total" class="currency" data-value="{{ payments_total or 0 }}">{{ payments_total or 0 }}</strong></p>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ p[0] }}</td>
+            <td><span class="currency" data-value="{{ p[1] or 0 }}">{{ p[1] or 0 }}</span></td>
+            <td>{{ p[2] or '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="card">
+    <h3>Add Payment</h3>
+    <form method="post" action="{% if user.role=='ADMIN' %}{{ url_for('admin_add_payment', rowid=row.rowid) }}{% else %}{{ url_for('crm_add_payment', rowid=row.rowid) }}{% endif %}" class="form">
+      <div class="form-row">
+        <label class="required"><span class="label-text">Paid Date</span>
+          <input type="date" name="paid_date" value="{{ row.booking_date or '' }}" required>
+        </label>
+        <label class="required"><span class="label-text">Amount</span>
+          <input type="text" name="amount" inputmode="decimal" placeholder="₹ 0.00" required>
+        </label>
+        <label>Note
+          <input type="text" name="note">
+        </label>
+      </div>
+      <button type="submit" class="btn">Add Payment</button>
+    </form>
+    <p class="help">Adding a payment will reduce Balance and Balance by Plan automatically.</p>
+  </section>
+</div>
 {% endblock %}
 {% block scripts %}
 <script>

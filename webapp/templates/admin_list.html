@@ -18,6 +18,7 @@
 <table class="table">
   <thead>
     <tr>
+      <th>Actions</th>
       <th>S.No</th>
       <th>Date</th>
       <th>Buyer</th>
@@ -27,12 +28,17 @@
       <th>Balance</th>
       <th>Balance by Plan</th>
       <th>During Exec</th>
-      <th>Actions</th>
     </tr>
   </thead>
   <tbody>
     {% for r in rows %}
     <tr>
+      <td>
+        <a class="btn small" href="{{ url_for('admin_edit', rowid=r.rowid) }}">Edit</a>
+        <form method="post" action="{{ url_for('admin_delete', rowid=r.rowid) }}" class="inline" onsubmit="return confirm('Delete this entry?');" style="display:inline">
+          <button class="btn small danger" type="submit">Delete</button>
+        </form>
+      </td>
       <td>{{ r.s_no }}</td>
       <td>{{ r.booking_date }}</td>
       <td>{{ r.buyer_name }}</td>
@@ -42,12 +48,6 @@
       <td><span class="currency" data-value="{{ r.balance_amount or 0 }}">{{ r.balance_amount or 0 }}</span></td>
       <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}">{{ r.balance_tobe_received_by_plan_approval or 0 }}</span></td>
       <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}">{{ r.balance_tobe_received_during_exec or 0 }}</span></td>
-      <td>
-        <a class="btn small" href="{{ url_for('admin_edit', rowid=r.rowid) }}">Edit</a>
-        <form method="post" action="{{ url_for('admin_delete', rowid=r.rowid) }}" class="inline" onsubmit="return confirm('Delete this entry?');" style="display:inline">
-          <button class="btn small danger" type="submit">Delete</button>
-        </form>
-      </td>
     </tr>
     {% endfor %}
   </tbody>

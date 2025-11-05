@@ -8,23 +8,23 @@
       <label>S. No
         <div class="readonly-label">{{ next_sno }}</div>
       </label>
-      <label>Booking Date
-        <input name="booking_date" type="date" value="{{ today }}">
+      <label class="required"><span class="label-text">Booking Date</span>
+        <input name="booking_date" type="date" value="{{ today }}" required>
       </label>
-      <label>Project
-        <input name="project" type="text">
+      <label class="required"><span class="label-text">Project</span>
+        <input name="project" type="text" value="Arcadia" required>
       </label>
     </div>
 
     <div class="form-row">
-      <label>SPG/Praneeth
+      <label class="required"><span class="label-text">SPG/Praneeth</span>
         <select name="spg_praneeth" required>
           {% for opt in spg_opts %}
             <option value="{{ opt }}" {% if opt=='SPG' %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
         </select>
       </label>
-      <label>Type of Sale
+      <label class="required"><span class="label-text">Type of Sale</span>
         <select name="type_of_sale" required>
           {% for opt in tos_opts %}
             <option value="{{ opt }}" {% if opt=='OTP' %}selected{% endif %}>{{ opt }}</option>
@@ -37,7 +37,7 @@
     </div>
 
     <div class="form-row">
-      <label>Buyer Name
+      <label class="required"><span class="label-text">Buyer Name</span>
         <input name="buyer_name" type="text" required>
       </label>
       <label>SOL
@@ -49,14 +49,14 @@
     </div>
 
     <div class="form-row">
-      <label>Land (sq yards)
-        <input name="land_sqyards" type="number" step="1" value="0">
+      <label class="required"><span class="label-text">Land (sq yards)</span>
+        <input name="land_sqyards" type="number" step="1" value="0" required>
       </label>
       <label>SBUA (sqft)
         <input name="sbua_sqft" type="number" step="0.01" value="0">
       </label>
-      <label>Base sqft price
-        <input name="base_sqft_price" type="text" inputmode="decimal" placeholder="₹ 0.00">
+      <label class="required"><span class="label-text">Base sqft price</span>
+        <input name="base_sqft_price" type="text" inputmode="decimal" placeholder="₹ 0.00" required>
       </label>
       <label>Amenities & Premiums
         <input name="amenties_and_premiums" type="text" inputmode="decimal" placeholder="₹ 0.00">

@@ -1,0 +1,37 @@
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Arial,sans-serif;margin:0;background:#f7f7fb;color:#1a1a1a}
+a{color:#0a66c2;text-decoration:none}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#111827;color:#fff}
+.nav .links a{color:#fff;margin-left:12px}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#111827;color:#fff;padding:16px 12px}
+.sidebar .brand{font-weight:700;margin-bottom:16px}
+.sidebar .menu{display:flex;flex-direction:column;gap:8px}
+.sidebar .menu a{color:#fff;background:#1f2937;padding:10px 12px;border-radius:8px}
+.sidebar .menu a:hover{background:#374151}
+.container{padding:20px;max-width:1100px;margin:0 auto}
+.container.with-sidebar{margin-left:240px}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 6px 16px rgba(0,0,0,.08);margin-bottom:16px}
+.form label{display:flex;flex-direction:column;font-size:.9rem;margin:8px}
+.form input,.form select,.form textarea{padding:10px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px;background:#fff}
+.form .form-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.form.inline{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.form.filters .row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.grid-two{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.btn{background:#2563eb;color:#fff;border:none;padding:10px 14px;border-radius:10px;cursor:pointer}
+.btn.secondary{background:#6b7280}
+.btn.small{padding:6px 10px;font-size:.85rem}
+.btn.danger{background:#dc2626}
+.table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+.table th,.table td{padding:12px;border-bottom:1px solid #eee;text-align:left}
+.table thead{background:#f3f4f6}
+.flash-area{margin-bottom:12px}
+.flash{padding:10px;border-radius:10px;margin-bottom:8px}
+.flash.error{background:#fee2e2;color:#991b1b}
+.flash.success{background:#dcfce7;color:#166534}
+.errors{background:#fee2e2;color:#991b1b;padding:10px;border-radius:10px}
+.help{font-size:.8rem;color:#6b7280;margin-left:8px}
+.calculated{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 8px}
+.calculated div{background:#f3f4f6;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.info ul{margin:0 0 0 16px}
+.spacer{flex:1}
+@media (max-width:900px){.grid-two{grid-template-columns:1fr}.form .form-row{grid-template-columns:1fr}}

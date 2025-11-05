@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Arcadia Sales{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  {% if session.get('user_id') %}
+  <aside class="sidebar">
+    <div class="brand">Arcadia Sales</div>
+    <nav class="menu">
+      {% if session.get('role') == 'CRM' %}
+        <a href="{{ url_for('crm_new') }}">New Entry</a>
+        <a href="{{ url_for('crm_list') }}">My Entries</a>
+      {% elif session.get('role') == 'ADMIN' %}
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_crms') }}">Manage CRMs</a>
+        <a href="{{ url_for('admin_options') }}">Options</a>
+        <a href="{{ url_for('admin_new') }}">New Sale</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+  </aside>
+  {% endif %}
+  <main class="container {% if session.get('user_id') %}with-sidebar{% endif %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-area">
+          {% for cat, msg in messages %}
+            <div class="flash {{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

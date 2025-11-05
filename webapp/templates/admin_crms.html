@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Manage CRMs{% endblock %}
+{% block content %}
+<h1>Manage Users</h1>
+<form method="post" action="{{ url_for('admin_crms_new') }}" class="card form inline">
+  <input name="username" placeholder="username" required>
+  <input name="password" placeholder="password" required>
+  <select name="role">
+    <option value="CRM">CRM</option>
+    <option value="ADMIN">ADMIN</option>
+  </select>
+  <button class="btn" type="submit">Add User</button>
+</form>
+<table class="table">
+  <thead>
+    <tr><th>ID</th><th>Username</th><th>Role</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.role }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin_crms_edit', uid=u.id) }}" class="inline">
+          <input name="password" placeholder="new password">
+          <select name="role">
+            <option value="CRM" {{ 'selected' if u.role=='CRM' }}>CRM</option>
+            <option value="ADMIN" {{ 'selected' if u.role=='ADMIN' }}>ADMIN</option>
+          </select>
+          <button class="btn small" type="submit">Update</button>
+        </form>
+        <form method="post" action="{{ url_for('admin_crms_delete', uid=u.id) }}" class="inline" onsubmit="return confirm('Delete user? Entries remain.');">
+          <button class="btn small danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

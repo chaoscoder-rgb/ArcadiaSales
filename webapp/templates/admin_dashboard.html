@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<form method="get" class="card form filters">
+  <div class="row">
+    <label>Year
+      <input type="number" name="year" value="{{ filters.year or '' }}" placeholder="YYYY">
+    </label>
+    <label>Month
+      <input type="number" name="month" value="{{ filters.month or '' }}" min="1" max="12" placeholder="MM">
+    </label>
+    <label>CRM
+      <select name="crm_name">
+        <option value="">All</option>
+        {% for o in crm_opts %}
+          <option value="{{ o }}" {% if filters.crm==o %}selected{% endif %}>{{ o }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Sale Person
+      <select name="sale_person_name">
+        <option value="">All</option>
+        {% for o in sp_opts %}
+          <option value="{{ o }}" {% if filters.sp==o %}selected{% endif %}>{{ o }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="row">
+    <label>SPG/Praneeth
+      <select name="spg_praneeth">
+        <option value="">All</option>
+        {% for o in spg_opts %}
+          <option value="{{ o }}" {% if filters.spg==o %}selected{% endif %}>{{ o }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Type of Sale
+      <select name="type_of_sale">
+        <option value="">All</option>
+        {% for o in tos_opts %}
+          <option value="{{ o }}" {% if filters.tos==o %}selected{% endif %}>{{ o }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="actions">
+      <button class="btn" type="submit">Apply</button>
+      <a class="btn secondary" href="{{ url_for('admin_export', **filters) }}">Export CSV</a>
+      <button class="btn secondary" type="button" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</form>
+
+<div class="table-scroll">
+<table class="table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>S.No</th>
+      <th>CRM</th>
+      <th>Sale Person</th>
+      <th>Buyer</th>
+      <th>Project</th>
+      <th>SPG/Praneeth</th>
+      <th>Type</th>
+      <th>Total</th>
+      <th>Received</th>
+      <th>Balance</th>
+      <th>Balance by Plan</th>
+      <th>During Exec</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in data %}
+    <tr>
+      <td>{{ r.booking_date }}</td>
+      <td>{{ r.s_no }}</td>
+      <td>{{ r.crm_name }}</td>
+      <td>{{ r.sale_person_name }}</td>
+      <td>{{ r.buyer_name }}</td>
+      <td>{{ r.project }}</td>
+      <td>{{ r.spg_praneeth }}</td>
+      <td>{{ r.type_of_sale }}</td>
+      <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.amount_received or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.balance_amount or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}"></span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

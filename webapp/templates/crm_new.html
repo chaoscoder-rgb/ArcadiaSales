@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}New Entry - CRM{% endblock %}
+{% block content %}
+<h1>New Sale Entry</h1>
+<div class="grid-two">
+  <form id="crmForm" class="card form">
+    <div class="form-row">
+      <label>S. No
+        <div class="readonly-label">{{ next_sno }}</div>
+      </label>
+      <label>Booking Date
+        <input name="booking_date" type="date" value="{{ today }}">
+      </label>
+      <label>Project
+        <input name="project" type="text">
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>SPG/Praneeth
+        <select name="spg_praneeth" required>
+          {% for opt in spg_opts %}
+            <option value="{{ opt }}" {% if opt=='SPG' %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Type of Sale
+        <select name="type_of_sale" required>
+          {% for opt in tos_opts %}
+            <option value="{{ opt }}" {% if opt=='OTP' %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Token
+        <input name="token" type="number" step="1">
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Buyer Name
+        <input name="buyer_name" type="text" required>
+      </label>
+      <label>SOL
+        <input name="sol" type="text">
+      </label>
+      <label>Facing
+        <input name="facing" type="text">
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Land (sq yards)
+        <input name="land_sqyards" type="number" step="1" value="0">
+      </label>
+      <label>SBUA (sqft)
+        <input name="sbua_sqft" type="number" step="0.01" value="0">
+      </label>
+      <label>Base sqft price
+        <input name="base_sqft_price" type="text" inputmode="decimal" placeholder="₹ 0.00">
+      </label>
+      <label>Amenities & Premiums
+        <input name="amenties_and_premiums" type="text" inputmode="decimal" placeholder="₹ 0.00">
+      </label>
+      <label>Amount Received
+        <input name="amount_received" type="text" inputmode="decimal" placeholder="₹ 0.00">
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Sale Person Name
+        <input name="sale_person_name" type="text" value="madhavi">
+      </label>
+      <label class="wide">Notes
+        <textarea name="notes" rows="5"></textarea>
+      </label>
+    </div>
+
+    <div class="calculated">
+      <div>
+        <span>Total Sale Price</span>
+        <strong id="total_sale_price">₹ 0.00</strong>
+      </div>
+      <div>
+        <span>Balance Amount</span>
+        <strong id="balance_amount">₹ 0.00</strong>
+      </div>
+      <div>
+        <span>Balance by Plan Approval</span>
+        <strong id="balance_plan">₹ 0.00</strong>
+      </div>
+    </div>
+
+    <div id="errors" class="errors" style="display:none"></div>
+
+    <button type="submit" class="btn">Save</button>
+  </form>
+
+  <aside class="card info">
+    <h3>Formulas</h3>
+    <ul>
+      <li><strong>Total Sale Price</strong> = (Base sqft price + Amenities & Premiums) x Land (sq yards)</li>
+      <li><strong>Balance Amount</strong> = Total Sale Price - Amount Received</li>
+      <li><strong>Balance by Plan Approval</strong> = if OTP → Balance Amount; if R → (Total Sale Price x 20%) - Balance Amount</li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+initCrmForm();
+</script>
+{% endblock %}

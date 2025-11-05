@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Manage Options{% endblock %}
+{% block content %}
+<h1>Manage Select Options</h1>
+<div class="grid-two">
+  <div class="card">
+    <h3>SPG/Praneeth Options</h3>
+    <form method="post" class="form inline">
+      <input type="hidden" name="kind" value="spg">
+      <input name="value" placeholder="New value">
+      <button class="btn" name="action" value="add" type="submit">Add</button>
+      <button class="btn danger" name="action" value="delete" type="submit">Delete</button>
+    </form>
+    <ul>
+      {% for v in spg %}
+        <li>{{ v }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Type of Sale Options</h3>
+    <form method="post" class="form inline">
+      <input type="hidden" name="kind" value="tos">
+      <input name="value" placeholder="New value">
+      <button class="btn" name="action" value="add" type="submit">Add</button>
+      <button class="btn danger" name="action" value="delete" type="submit">Delete</button>
+    </form>
+    <ul>
+      {% for v in tos %}
+        <li>{{ v }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

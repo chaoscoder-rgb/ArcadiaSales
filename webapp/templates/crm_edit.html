@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Edit Entry{% endblock %}
+{% block content %}
+<h1>Edit Entry</h1>
+<form id="crmEditForm" method="post" class="card form">
+  <div class="form-row">
+    <label>S. No
+      <div class="readonly-label">{{ row.s_no }}</div>
+    </label>
+    <label>Booking Date
+      <input name="booking_date" type="date" value="{{ row.booking_date }}" data-prev="{{ row.booking_date }}">
+      <small class="prev"></small>
+    </label>
+    <label>Project
+      <input name="project" type="text" value="{{ row.project }}" data-prev="{{ row.project }}">
+      <small class="prev"></small>
+    </label>
+  </div>
+  <div class="form-row">
+    <label>SPG/Praneeth
+      <select name="spg_praneeth" required data-prev="{{ row.spg_praneeth }}">
+        <option value="SPG" {{ 'selected' if row.spg_praneeth=='SPG' }}>SPG</option>
+        <option value="Praneeth" {{ 'selected' if row.spg_praneeth=='Praneeth' }}>Praneeth</option>
+      </select>
+      <small class="prev"></small>
+    </label>
+    <label>Type of Sale
+      <select name="type_of_sale" required data-prev="{{ row.type_of_sale }}">
+        <option value="OTP" {{ 'selected' if row.type_of_sale=='OTP' }}>OTP</option>
+        <option value="R" {{ 'selected' if row.type_of_sale=='R' }}>R</option>
+      </select>
+      <small class="prev"></small>
+    </label>
+    <label>Token
+      <input name="token" type="number" step="1" value="{{ row.token }}" data-prev="{{ row.token }}">
+      <small class="prev"></small>
+    </label>
+  </div>
+  <div class="form-row">
+    <label>Buyer Name
+      <input name="buyer_name" type="text" value="{{ row.buyer_name }}" data-prev="{{ row.buyer_name }}">
+      <small class="prev"></small>
+    </label>
+    <label>SOL
+      <input name="sol" type="text" value="{{ row.sol }}" data-prev="{{ row.sol }}">
+      <small class="prev"></small>
+    </label>
+    <label>Facing
+      <input name="facing" type="text" value="{{ row.facing }}" data-prev="{{ row.facing }}">
+      <small class="prev"></small>
+    </label>
+  </div>
+  <div class="form-row">
+    <label>Land (sq yards)
+      <input name="land_sqyards" type="text" inputmode="decimal" value="{{ row.land_sqyards }}" data-prev="{{ row.land_sqyards }}">
+      <small class="prev"></small>
+    </label>
+    <label>SBUA (sqft)
+      <input name="sbua_sqft" type="number" step="0.01" value="{{ row.sbua_sqft }}" data-prev="{{ row.sbua_sqft }}">
+      <small class="prev"></small>
+    </label>
+    <label>Base sqft price
+      <input name="base_sqft_price" type="text" inputmode="decimal" value="{{ row.base_sqft_price }}" data-prev="{{ row.base_sqft_price }}">
+      <small class="prev"></small>
+    </label>
+    <label>Amenities & Premiums
+      <input name="amenties_and_premiums" type="text" inputmode="decimal" value="{{ row.amenties_and_premiums }}" data-prev="{{ row.amenties_and_premiums }}">
+      <small class="prev"></small>
+    </label>
+    <label>Amount Received
+      <input name="amount_received" type="text" inputmode="decimal" value="{{ row.amount_received }}" data-prev="{{ row.amount_received }}">
+      <small class="prev"></small>
+    </label>
+    <label>Sale Person Name
+      <input name="sale_person_name" type="text" value="{{ row.sale_person_name }}" data-prev="{{ row.sale_person_name }}">
+      <small class="prev"></small>
+    </label>
+  </div>
+  <label class="wide">Notes
+    <textarea name="notes" rows="5" data-prev="{{ row.notes }}">{{ row.notes }}</textarea>
+    <small class="prev"></small>
+  </label>
+
+  <div class="calculated">
+    <div>
+      <span>Total Sale Price</span>
+      <strong id="edit_total_sale_price">₹ 0.00</strong>
+    </div>
+    <div>
+      <span>Balance Amount</span>
+      <strong id="edit_balance_amount">₹ 0.00</strong>
+    </div>
+    <div>
+      <span>Balance by Plan Approval</span>
+      <strong id="edit_balance_plan">₹ 0.00</strong>
+    </div>
+  </div>
+
+  <button class="btn" type="submit">Save</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+initEditForm();
+</script>
+{% endblock %}

@@ -5,7 +5,11 @@
 <form method="get" class="card form filters">
   <div class="row">
     <label>Year
-      <input type="number" name="year" value="{{ filters.year or '' }}" placeholder="YYYY">
+      <select name="year">
+        {% for y in years %}
+          <option value="{{ y }}" {% if (filters.year or '')==y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
     </label>
     <label>Month
       <input type="number" name="month" value="{{ filters.month or '' }}" min="1" max="12" placeholder="MM">
@@ -48,6 +52,7 @@
       <button class="btn" type="submit">Apply</button>
       <a class="btn secondary" href="{{ url_for('admin_export', **filters) }}">Export CSV</a>
       <button class="btn secondary" type="button" onclick="window.print()">Print</button>
+      <a class="btn secondary" href="{{ url_for('admin_dashboard') }}">Clear</a>
     </div>
   </div>
 </form>
@@ -75,7 +80,7 @@
   {% for r in data %}
     <tr>
       <td>{{ r.booking_date }}</td>
-      <td>{{ r.s_no }}</td>
+      <td><a href="{{ url_for('admin_sale_detail', rowid=r.rowid) }}">{{ r.s_no }}</a></td>
       <td>{{ r.crm_name }}</td>
       <td>{{ r.sale_person_name }}</td>
       <td>{{ r.buyer_name }}</td>

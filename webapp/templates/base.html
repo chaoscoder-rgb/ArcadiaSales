@@ -14,6 +14,7 @@
       {% if session.get('role') == 'CRM' %}
         <a href="{{ url_for('crm_new') }}">New Entry</a>
         <a href="{{ url_for('crm_list') }}">My Entries</a>
+        <a href="{{ url_for('crm_sales_people') }}">Sales People</a>
       {% elif session.get('role') == 'ADMIN' %}
         <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
         <a href="{{ url_for('admin_entries') }}">My Entries</a>

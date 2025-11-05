@@ -46,7 +46,12 @@
       <small class="prev"></small>
     </label>
     <label>Facing
-      <input name="facing" type="text" value="{{ row.facing }}" data-prev="{{ row.facing }}">
+      <select name="facing" data-prev="{{ row.facing }}">
+        {% set facing_opts = ['North','South','East','West','North-East','South-East','North-West','South-West'] %}
+        {% for f in facing_opts %}
+          <option value="{{ f }}" {{ 'selected' if row.facing==f }}>{{ f }}</option>
+        {% endfor %}
+      </select>
       <small class="prev"></small>
     </label>
   </div>
@@ -72,7 +77,12 @@
       <small class="prev"></small>
     </label>
     <label>Sale Person Name
-      <input name="sale_person_name" type="text" value="{{ row.sale_person_name }}" data-prev="{{ row.sale_person_name }}">
+      <select name="sale_person_name" data-prev="{{ row.sale_person_name }}">
+        <option value="">Select</option>
+        {% for sp in sale_people %}
+          <option value="{{ sp }}" {{ 'selected' if row.sale_person_name==sp }}>{{ sp }}</option>
+        {% endfor %}
+      </select>
       <small class="prev"></small>
     </label>
   </div>

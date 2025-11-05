@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Sales People{% endblock %}
+{% block content %}
+<h1>Sales People</h1>
+<div class="actions" style="margin-bottom:12px">
+  <a class="btn" href="{{ url_for('crm_sales_people_new') }}">Add Sales Person</a>
+</div>
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Title</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Address</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in people %}
+      <tr>
+        <td>{{ p[1] }}</td>
+        <td>{{ p[5] }}</td>
+        <td>{{ p[2] }}</td>
+        <td>{{ p[3] }}</td>
+        <td>{{ p[4] }}</td>
+        <td>
+          <a class="btn small" href="{{ url_for('crm_sales_people_edit', pid=p[0]) }}">Edit</a>
+          <form method="post" action="{{ url_for('crm_sales_people_delete', pid=p[0]) }}" class="inline" onsubmit="return confirm('Delete this sales person?');" style="display:inline">
+            <button class="btn small danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

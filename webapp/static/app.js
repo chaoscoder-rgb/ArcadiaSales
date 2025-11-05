@@ -40,18 +40,20 @@ function initEditForm(){
     }
     updatePrevLabel(el);
   });
+  // Recalculate totals on any input change (e.g., land, type_of_sale, etc.)
+  form.addEventListener('input', ()=>{ calcEditTotals(form); });
   calcEditTotals(form);
 }
 
 function calcEditTotals(form){
-  const land = parseCurrency(form.land_sqyards.value);
+  const sbua = parseCurrency(form.sbua_sqft.value);
   const base = parseCurrency(form.base_sqft_price.value);
   const prem = parseCurrency(form.amenties_and_premiums.value);
   const received = parseCurrency(form.amount_received.value);
   const paymentsNode = document.getElementById('payments_total');
   const extraPaid = paymentsNode ? parseCurrency(paymentsNode.getAttribute('data-value')) : 0;
   const tos = (form.type_of_sale.value||'').toUpperCase();
-  const total = (base + prem) * land;
+  const total = (base + prem) * sbua;
   const balance = total - (received + extraPaid);
   const byPlan = tos==='OTP' ? balance : (total*0.20) - balance;
   document.getElementById('edit_total_sale_price').textContent = formatCurrency(total);
@@ -73,12 +75,12 @@ function formatInputCurrency(input){
 }
 
 function calcTotals(form){
-  const land = parseCurrency(form.land_sqyards.value);
+  const sbua = parseCurrency(form.sbua_sqft.value);
   const base = parseCurrency(form.base_sqft_price.value);
   const prem = parseCurrency(form.amenties_and_premiums.value);
   const received = parseCurrency(form.amount_received.value);
   const tos = (form.type_of_sale.value||'').toUpperCase();
-  const total = (base + prem) * land; // updated formula
+  const total = (base + prem) * sbua; // updated formula: sbua_sqft * (base + amenities)
   const balance = total - received;
   const byPlan = tos==='OTP' ? balance : (total*0.20) - balance;
   document.getElementById('total_sale_price').textContent = formatCurrency(total);

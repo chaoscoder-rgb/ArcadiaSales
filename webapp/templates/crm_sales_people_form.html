@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if person else 'Add' }} Sales Person{% endblock %}
+{% block content %}
+<h1>{{ 'Edit' if person else 'Add' }} Sales Person</h1>
+<form method="post" class="card form" enctype="multipart/form-data">
+  <div class="form-row">
+    <label class="required"><span class="label-text">Full Name</span>
+      <input type="text" name="full_name" value="{{ person.full_name if person else '' }}" required>
+    </label>
+    <label>Title
+      <select name="title">
+        {% set titles = ['Junior Sales Person','Senior Sales Person'] %}
+        {% for t in titles %}
+          <option value="{{ t }}" {% if person and person.title==t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="form-row">
+    <label>Phone
+      <input type="text" name="phone" value="{{ person.phone if person else '' }}">
+    </label>
+    <label>Email
+      <input type="email" name="email" value="{{ person.email if person else '' }}">
+    </label>
+  </div>
+  <div class="form-row">
+    <label class="wide">Address
+      <input type="text" name="address" value="{{ person.address if person else '' }}">
+    </label>
+  </div>
+  <div class="form-row">
+    <label>Photo
+      <input type="file" name="photo" accept="image/*">
+    </label>
+  </div>
+  <div class="actions">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn secondary" href="{{ url_for('crm_sales_people') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -44,7 +44,12 @@
         <input name="sol" type="text">
       </label>
       <label>Facing
-        <input name="facing" type="text">
+        <select name="facing">
+          {% set facing_opts = ['North','South','East','West','North-East','South-East','North-West','South-West'] %}
+          {% for f in facing_opts %}
+            <option value="{{ f }}" {% if f=='North' %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
       </label>
     </div>
 
@@ -68,7 +73,12 @@
 
     <div class="form-row">
       <label>Sale Person Name
-        <input name="sale_person_name" type="text">
+        <select name="sale_person_name">
+          <option value="">Select</option>
+          {% for sp in sale_people %}
+            <option value="{{ sp }}">{{ sp }}</option>
+          {% endfor %}
+        </select>
       </label>
       <label class="wide">Notes
         <textarea name="notes" rows="5"></textarea>
@@ -98,7 +108,7 @@
   <aside class="card info">
     <h3>Formulas</h3>
     <ul>
-      <li><strong>Total Sale Price</strong> = (Base sqft price + Amenities & Premiums) x Land (sq yards)</li>
+      <li><strong>Total Sale Price</strong> = SBUA (sqft) x (Base sqft price + Amenities & Premiums)</li>
       <li><strong>Balance Amount</strong> = Total Sale Price - Amount Received</li>
       <li><strong>Balance by Plan Approval</strong> = if OTP → Balance Amount; if R → (Total Sale Price x 20%) - Balance Amount</li>
     </ul>

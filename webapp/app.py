@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import create_engine, Column, Integer, String, Date, Float, Text, CheckConstraint, func, text
+from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base, scoped_session
 from io import StringIO
 import re
@@ -93,6 +93,33 @@ def login_required(role=None):
         return wrapper
     return decorator
 
+def get_options(table):
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(f"SELECT value FROM {table} ORDER BY value")
+        return [r[0] for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+def is_valid_option(table, value):
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(f"SELECT 1 FROM {table} WHERE value = ?", (value,))
+        return cur.fetchone() is not None
+    finally:
+        conn.close()
+
+def clean_number(val):
+    return float(re.sub(r"[^0-9.-]", "", (val or '0'))) if re.sub(r"[^0-9.-]", "", (val or '')) != '' else 0.0
+
+def compute_totals(base, prem, land, received, tos):
+    total = (base + prem) * land
+    balance = total - received
+    by_plan = balance if tos == 'OTP' else (total * 0.20) - balance
+    return total, balance, by_plan
+
 @app.route('/')
 def index():
     user = current_user()
@@ -133,42 +160,19 @@ def crm_new():
     user = current_user()
     if request.method == 'POST':
         data = dict(request.form)
-        # Server-side validations
         errors = []
         spg = data.get('spg_praneeth','').strip() or 'SPG'
-        # validate via options table
-        conn = engine.raw_connection();
-        try:
-            cur = conn.cursor(); cur.execute("SELECT 1 FROM spg_options WHERE value=?", (spg,));
-            if not cur.fetchone(): errors.append('spg_praneeth invalid')
-        finally:
-            conn.close()
         tos = (data.get('type_of_sale','').strip() or 'OTP').upper()
-        conn = engine.raw_connection();
-        try:
-            cur = conn.cursor(); cur.execute("SELECT 1 FROM sale_type_options WHERE value=?", (tos,));
-            if not cur.fetchone(): errors.append('type_of_sale invalid')
-        finally:
-            conn.close()
-        def to_float(name):
-            v = data.get(name, '')
-            v = re.sub(r"[^0-9.-]", "", v)
-            try:
-                return float(v) if v != '' else 0.0
-            except:
-                errors.append(f'{name} must be a number')
-                return 0.0
-        base = to_float('base_sqft_price')
-        prem = to_float('amenties_and_premiums')
-        sbua = to_float('sbua_sqft')
-        land = to_float('land_sqyards')
-        amt_received = to_float('amount_received')
-        total_sale_price = (base + prem) * land
-        balance_amount = total_sale_price - amt_received
-        if tos == 'OTP':
-            by_plan = balance_amount
-        else:
-            by_plan = (total_sale_price * 0.20) - balance_amount
+        if not is_valid_option('spg_options', spg):
+            errors.append('spg_praneeth invalid')
+        if not is_valid_option('sale_type_options', tos):
+            errors.append('type_of_sale invalid')
+        base = clean_number(data.get('base_sqft_price'))
+        prem = clean_number(data.get('amenties_and_premiums'))
+        sbua = clean_number(data.get('sbua_sqft'))
+        land = clean_number(data.get('land_sqyards'))
+        amt_received = clean_number(data.get('amount_received'))
+        total_sale_price, balance_amount, by_plan = compute_totals(base, prem, land, amt_received, tos)
         if errors:
             return jsonify({"ok": False, "errors": errors})
         # Get next s_no and insert
@@ -293,17 +297,13 @@ def crm_edit(rowid):
                     sets.append(f"{k}=?")
                     vals.append(data[k])
             # Recompute calculated fields (updated formula)
-            def cleanf(x):
-                return float(re.sub(r"[^0-9.-]", "", x or '0') or 0)
-            base = cleanf(data.get('base_sqft_price'))
-            prem = cleanf(data.get('amenties_and_premiums'))
-            sbua = float(data.get('sbua_sqft') or 0)
-            land = cleanf(data.get('land_sqyards'))
-            amt_received = cleanf(data.get('amount_received'))
-            total_sale_price = (base + prem) * land
-            balance_amount = total_sale_price - amt_received
+            base = clean_number(data.get('base_sqft_price'))
+            prem = clean_number(data.get('amenties_and_premiums'))
+            sbua = clean_number(data.get('sbua_sqft'))
+            land = clean_number(data.get('land_sqyards'))
+            amt_received = clean_number(data.get('amount_received'))
             tos = (data.get('type_of_sale') or '').upper()
-            by_plan = balance_amount if tos == 'OTP' else (total_sale_price * 0.20) - balance_amount
+            total_sale_price, balance_amount, by_plan = compute_totals(base, prem, land, amt_received, tos)
             sets += ["total_sale_price=?","balance_amount=?","balance_tobe_received_by_plan_approval=?"]
             vals += [total_sale_price, balance_amount, by_plan]
             # Enforce ownership
@@ -503,42 +503,22 @@ def admin_crms_delete(uid):
 @app.route('/admin/new', methods=['GET','POST'])
 @login_required(role='ADMIN')
 def admin_new():
+    user = current_user()
     if request.method == 'POST':
         data = dict(request.form)
         errors = []
         spg = (data.get('spg_praneeth','').strip() or 'SPG')
-        # validate via options
-        conn = engine.raw_connection();
-        try:
-            cur = conn.cursor(); cur.execute("SELECT 1 FROM spg_options WHERE value=?", (spg,));
-            if not cur.fetchone(): errors.append('spg_praneeth invalid')
-        finally:
-            conn.close()
         tos = (data.get('type_of_sale','').strip() or 'OTP').upper()
-        conn = engine.raw_connection();
-        try:
-            cur = conn.cursor(); cur.execute("SELECT 1 FROM sale_type_options WHERE value=?", (tos,));
-            if not cur.fetchone(): errors.append('type_of_sale invalid')
-        finally:
-            conn.close()
-        def to_float(name):
-            v = data.get(name, '')
-            try:
-                return float(v) if v != '' else 0.0
-            except:
-                errors.append(f'{name} must be a number')
-                return 0.0
-        base = to_float('base_sqft_price')
-        prem = to_float('amenties_and_premiums')
-        sbua = to_float('sbua_sqft')
-        land = float(data.get('land_sqyards', '0') or 0)
-        amt_received = to_float('amount_received')
-        total_sale_price = (base + prem) * land
-        balance_amount = total_sale_price - amt_received
-        if tos == 'OTP':
-            by_plan = balance_amount
-        else:
-            by_plan = (total_sale_price * 0.20) - balance_amount
+        if not is_valid_option('spg_options', spg):
+            errors.append('spg_praneeth invalid')
+        if not is_valid_option('sale_type_options', tos):
+            errors.append('type_of_sale invalid')
+        base = clean_number(data.get('base_sqft_price'))
+        prem = clean_number(data.get('amenties_and_premiums'))
+        sbua = clean_number(data.get('sbua_sqft'))
+        land = clean_number(data.get('land_sqyards'))
+        amt_received = clean_number(data.get('amount_received'))
+        total_sale_price, balance_amount, by_plan = compute_totals(base, prem, land, amt_received, tos)
         if errors:
             flash('; '.join(errors), 'error')
             return redirect(url_for('admin_new'))
@@ -579,7 +559,7 @@ def admin_new():
                     data.get('notes'),
                     float(data.get('balance_tobe_received_during_exec') or 0) or None,
                     data.get('sale_person_name'),
-                    'admin'
+                    user.username
                 )
             )
             conn.commit()
@@ -599,6 +579,94 @@ def admin_new():
         conn.close()
     today = datetime.today().strftime('%Y-%m-%d')
     return render_template('admin_new.html', spg_opts=spg_opts, tos_opts=tos_opts, next_sno=next_sno, today=today)
+
+# Admin: My Entries list (only entries created by this admin)
+@app.route('/admin/entries')
+@login_required(role='ADMIN')
+def admin_entries():
+    user = current_user()
+    sort = request.args.get('sort','date_desc')
+    order_clause = "(booking_date IS NULL) ASC, booking_date DESC, s_no"
+    if sort == 'sno_desc':
+        order_clause = "s_no DESC"
+    elif sort == 'total_desc':
+        order_clause = "total_sale_price DESC"
+    conn = engine.raw_connection()
+    rows = []
+    try:
+        cur = conn.cursor()
+        cur.execute(f"SELECT rowid, * FROM sale_details WHERE crm_name = ? ORDER BY {order_clause}", (user.username,))
+        cols = [d[0] for d in cur.description]
+        for r in cur.fetchall():
+            rows.append(dict(zip(cols, r)))
+    finally:
+        conn.close()
+    return render_template('admin_list.html', rows=rows, user=user, sort=sort)
+
+# Admin: Edit own entry
+@app.route('/admin/edit/<int:rowid>', methods=['GET','POST'])
+@login_required(role='ADMIN')
+def admin_edit(rowid):
+    user = current_user()
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        if request.method == 'POST':
+            data = dict(request.form)
+            allowed = ['booking_date','project','spg_praneeth','token','buyer_name','sol','type_of_sale',
+                       'land_sqyards','sbua_sqft','facing','base_sqft_price','amenties_and_premiums',
+                       'amount_received','notes','sale_person_name']
+            sets = []
+            vals = []
+            for k in allowed:
+                if k in data:
+                    sets.append(f"{k}=?")
+                    vals.append(data[k])
+            def cleanf(x):
+                return float(re.sub(r"[^0-9.-]", "", x or '0') or 0)
+            base = cleanf(data.get('base_sqft_price'))
+            prem = cleanf(data.get('amenties_and_premiums'))
+            sbua = float(data.get('sbua_sqft') or 0)
+            land = cleanf(data.get('land_sqyards'))
+            amt_received = cleanf(data.get('amount_received'))
+            total_sale_price = (base + prem) * land
+            balance_amount = total_sale_price - amt_received
+            tos = (data.get('type_of_sale') or '').upper()
+            by_plan = balance_amount if tos == 'OTP' else (total_sale_price * 0.20) - balance_amount
+            sets += ["total_sale_price= ?","balance_amount= ?","balance_tobe_received_by_plan_approval= ?"]
+            vals += [total_sale_price, balance_amount, by_plan]
+            vals.append(user.username)
+            vals.append(rowid)
+            sql = f"UPDATE sale_details SET {', '.join(sets)} WHERE crm_name = ? AND rowid = ?"
+            cur.execute(sql, tuple(vals))
+            conn.commit()
+            return redirect(url_for('admin_entries'))
+        else:
+            cur.execute("SELECT rowid, * FROM sale_details WHERE crm_name = ? AND rowid = ?", (user.username, rowid))
+            row = cur.fetchone()
+            if not row:
+                flash('Not found or unauthorized', 'error')
+                return redirect(url_for('admin_entries'))
+            cols = [d[0] for d in cur.description]
+            rec = dict(zip(cols, row))
+            return render_template('crm_edit.html', row=rec, user=user)
+    finally:
+        conn.close()
+
+# Admin: Delete own entry
+@app.route('/admin/delete/<int:rowid>', methods=['POST'])
+@login_required(role='ADMIN')
+def admin_delete(rowid):
+    user = current_user()
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM sale_details WHERE rowid = ? AND crm_name = ?", (rowid, user.username))
+        conn.commit()
+        flash('Entry deleted', 'success')
+    finally:
+        conn.close()
+    return redirect(url_for('admin_entries'))
 
 @app.route('/admin/options', methods=['GET','POST'])
 @login_required(role='ADMIN')

@@ -82,11 +82,11 @@
       <td>{{ r.project }}</td>
       <td>{{ r.spg_praneeth }}</td>
       <td>{{ r.type_of_sale }}</td>
-      <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}"></span></td>
-      <td><span class="currency" data-value="{{ r.amount_received or 0 }}"></span></td>
-      <td><span class="currency" data-value="{{ r.balance_amount or 0 }}"></span></td>
-      <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}"></span></td>
-      <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}">{{ r.total_sale_price or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.amount_received or 0 }}">{{ r.amount_received or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.balance_amount or 0 }}">{{ r.balance_amount or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}">{{ r.balance_tobe_received_by_plan_approval or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}">{{ r.balance_tobe_received_during_exec or 0 }}</span></td>
     </tr>
   {% endfor %}
   </tbody>

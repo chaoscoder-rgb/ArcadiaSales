@@ -16,6 +16,7 @@
   <a class="btn" href="{{ url_for('crm_new') }}">New Entry</a>
   </div>
 
+<div class="table-scroll">
 <table class="table">
   <thead>
     <tr>
@@ -38,11 +39,11 @@
       <td>{{ r.booking_date }}</td>
       <td>{{ r.buyer_name }}</td>
       <td>{{ r.sale_person_name }}</td>
-      <td>₹ {{ '%.2f'|format(r.total_sale_price or 0) }}</td>
-      <td>₹ {{ '%.2f'|format(r.amount_received or 0) }}</td>
-      <td>₹ {{ '%.2f'|format(r.balance_amount or 0) }}</td>
-      <td>₹ {{ '%.2f'|format(r.balance_tobe_received_by_plan_approval or 0) }}</td>
-      <td>₹ {{ '%.2f'|format(r.balance_tobe_received_during_exec or 0) }}</td>
+      <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.amount_received or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.balance_amount or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}"></span></td>
       <td>
         <a class="btn small" href="{{ url_for('crm_edit', rowid=r.rowid) }}">Edit</a>
         <form method="post" action="{{ url_for('crm_delete', rowid=r.rowid) }}" class="inline" onsubmit="return confirm('Delete this entry?');" style="display:inline">
@@ -53,4 +54,5 @@
     {% endfor %}
   </tbody>
   </table>
+</div>
 {% endblock %}

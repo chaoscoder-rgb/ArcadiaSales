@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}My Entries - Admin{% endblock %}
+{% block content %}
+<h1>My Entries</h1>
+<div class="card form inline">
+  <label>Sort by
+    <select onchange="location=this.value">
+      <option value="{{ url_for('admin_entries', sort='date_desc') }}" {{ 'selected' if sort=='date_desc' }}>Date (newest)</option>
+      <option value="{{ url_for('admin_entries', sort='sno_desc') }}" {{ 'selected' if sort=='sno_desc' }}>S.No (desc)</option>
+      <option value="{{ url_for('admin_entries', sort='total_desc') }}" {{ 'selected' if sort=='total_desc' }}>Total (desc)</option>
+    </select>
+  </label>
+  <span class="spacer"></span>
+  <a class="btn" href="{{ url_for('admin_new') }}">New Sale</a>
+</div>
+
+<div class="table-scroll">
+<table class="table">
+  <thead>
+    <tr>
+      <th>S.No</th>
+      <th>Date</th>
+      <th>Buyer</th>
+      <th>Sale Person</th>
+      <th>Total</th>
+      <th>Amount Received</th>
+      <th>Balance</th>
+      <th>Balance by Plan</th>
+      <th>During Exec</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.s_no }}</td>
+      <td>{{ r.booking_date }}</td>
+      <td>{{ r.buyer_name }}</td>
+      <td>{{ r.sale_person_name }}</td>
+      <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}">{{ r.total_sale_price or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.amount_received or 0 }}">{{ r.amount_received or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.balance_amount or 0 }}">{{ r.balance_amount or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}">{{ r.balance_tobe_received_by_plan_approval or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}">{{ r.balance_tobe_received_during_exec or 0 }}</span></td>
+      <td>
+        <a class="btn small" href="{{ url_for('admin_edit', rowid=r.rowid) }}">Edit</a>
+        <form method="post" action="{{ url_for('admin_delete', rowid=r.rowid) }}" class="inline" onsubmit="return confirm('Delete this entry?');" style="display:inline">
+          <button class="btn small danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+{% endblock %}

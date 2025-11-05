@@ -128,10 +128,15 @@ function initCrmForm(){
 }
 
 // Format any plain number currency placeholders in tables
-document.addEventListener('DOMContentLoaded', ()=>{
+function formatCurrencyNodes(){
   const nodes = document.querySelectorAll('.currency[data-value]');
   nodes.forEach(el=>{
     const v = parseCurrency(el.getAttribute('data-value'));
     el.textContent = formatCurrency(v);
   });
-});
+}
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', formatCurrencyNodes);
+} else {
+  formatCurrencyNodes();
+}

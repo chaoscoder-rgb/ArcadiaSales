@@ -39,3 +39,30 @@ a{color:#0a66c2;text-decoration:none}
 .info ul{margin:0 0 0 16px}
 .spacer{flex:1}
 @media (max-width:900px){.grid-two{grid-template-columns:1fr}.form .form-row{grid-template-columns:1fr}}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:9999}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;min-width:320px;max-width:90vw;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.modal-header{font-weight:700;margin-bottom:8px}
+.modal-actions{display:flex;justify-content:flex-end;margin-top:12px}
+
+@media print{
+  @page { size: landscape; margin: 5mm 5mm; counter-increment: page; }
+  body{-webkit-print-color-adjust:exact; print-color-adjust: exact}
+  .sidebar,.nav,.flash-area,.actions{display:none!important}
+  .container{margin:0;max-width:none}
+  .container.with-sidebar{margin-left:0!important}
+  .table-scroll{overflow:visible!important}
+  .table{page-break-inside:auto;width:100%!important; table-layout:fixed}
+  .table th,.table td{white-space:normal; overflow-wrap:anywhere; word-break:break-word}
+  /* Hide Actions column (first column) on print for all tables */
+  .table th:first-child, .table td:first-child{display:none!important}
+  .table thead{display:table-header-group}
+  .table tfoot{display:table-footer-group}
+  .table tr{page-break-inside:avoid;page-break-after:auto}
+  .print-footer{position:fixed;bottom:0;right:20px;font-size:.85rem}
+  /* Some engines start counter(page) at 0; try to normalize */
+  body{counter-reset: page 1}
+  .print-footer:after{content:'Page ' counter(page)}
+}

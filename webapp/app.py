@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base, scoped_session
-from io import StringIO
+from io import StringIO, BytesIO
 import re
 import csv
 
@@ -138,6 +138,14 @@ def is_valid_option(table, value):
 def clean_number(val):
     return float(re.sub(r"[^0-9.-]", "", (val or '0'))) if re.sub(r"[^0-9.-]", "", (val or '')) != '' else 0.0
 
+def format_currency_csv(n):
+    try:
+        x = float(n or 0)
+    except Exception:
+        x = 0.0
+    # Use ASCII dollar to avoid encoding issues across viewers
+    return f"$ {x:,.2f}"
+
 def compute_totals(base, prem, sbua, received, tos):
     total = (base + prem) * sbua
     balance = total - received
@@ -215,8 +223,8 @@ def crm_new():
             errors.append('type_of_sale invalid')
         base = clean_number(data.get('base_sqft_price'))
         prem = clean_number(data.get('amenties_and_premiums'))
-        sbua = clean_number(data.get('sbua_sqft'))
         land = clean_number(data.get('land_sqyards'))
+        sbua = land * 13.5
         amt_received = clean_number(data.get('amount_received'))
         total_sale_price, balance_amount, by_plan = compute_totals(base, prem, sbua, amt_received, tos)
         if errors:
@@ -264,7 +272,7 @@ def crm_new():
             conn.commit()
         finally:
             conn.close()
-        return jsonify({"ok": True})
+        return jsonify({"ok": True, "s_no": int(next_sno)})
     # GET: load options and next s_no
     conn = engine.raw_connection()
     spg_opts, tos_opts, next_sno = [], [], 1
@@ -283,12 +291,20 @@ def crm_new():
 @login_required(role='CRM')
 def crm_list():
     user = current_user()
-    sort = request.args.get('sort','date_desc')
-    order_clause = "(booking_date IS NULL) ASC, booking_date DESC, rowid DESC"
-    if sort == 'sno_desc':
-        order_clause = "s_no DESC"
-    elif sort == 'total_desc':
-        order_clause = "total_sale_price DESC"
+    sort_by = request.args.get('sort_by','booking_date')
+    sort_dir = request.args.get('sort_dir','desc').lower()
+    allowed = {
+        's_no':'s_no', 'booking_date':'booking_date', 'buyer_name':'buyer_name', 'sale_person_name':'sale_person_name',
+        'total_sale_price':'total_sale_price', 'amount_received':'amount_received', 'balance_amount':'balance_amount',
+        'balance_tobe_received_by_plan_approval':'balance_tobe_received_by_plan_approval', 'balance_tobe_received_during_exec':'balance_tobe_received_during_exec'
+    }
+    col = allowed.get(sort_by, 'booking_date')
+    dir_sql = 'DESC' if sort_dir == 'desc' else 'ASC'
+    # keep NULL dates last when sorting by date desc
+    if col == 'booking_date' and dir_sql == 'DESC':
+        order_clause = "(booking_date IS NULL) ASC, booking_date DESC, s_no DESC"
+    else:
+        order_clause = f"{col} {dir_sql}"
     conn = engine.raw_connection()
     rows = []
     try:
@@ -299,7 +315,7 @@ def crm_list():
             rows.append(dict(zip(cols, r)))
     finally:
         conn.close()
-    return render_template('crm_list.html', rows=rows, user=user, sort=sort)
+    return render_template('crm_list.html', rows=rows, user=user, sort_by=col, sort_dir=dir_sql.lower())
 
 @app.route('/crm/export')
 @login_required(role='CRM')
@@ -308,19 +324,37 @@ def crm_export():
     conn = engine.raw_connection()
     try:
         cur = conn.cursor()
-        cur.execute("""
-            SELECT booking_date, s_no, buyer_name, sale_person_name, total_sale_price,
-                   amount_received, balance_amount, balance_tobe_received_by_plan_approval,
-                   balance_tobe_received_during_exec
-            FROM sale_details WHERE crm_name = ? ORDER BY booking_date DESC, s_no
-        """, (user.username,))
+        # Same columns/order as Admin dashboard export but filtered to current CRM
+        query = (
+            "SELECT "
+            "s_no, booking_date, project, spg_praneeth, token, buyer_name, sale_person_name, crm_name, sol, "
+            "type_of_sale, land_sqyards, sbua_sqft, facing, base_sqft_price, amenties_and_premiums, "
+            "total_sale_price, amount_received, balance_amount, balance_tobe_received_by_plan_approval, notes, "
+            "balance_tobe_received_during_exec "
+            "FROM sale_details WHERE crm_name = ? ORDER BY (booking_date IS NULL) ASC, booking_date DESC, s_no DESC"
+        )
+        cur.execute(query, (user.username,))
         rows = cur.fetchall()
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow(['booking_date','s_no','buyer_name','sale_person_name','total_sale_price','amount_received','balance_amount','balance_by_plan','balance_during_exec'])
-        writer.writerows(rows)
-        output.seek(0)
-        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='my_sales.csv')
+        text = StringIO()
+        writer = csv.writer(text)
+        writer.writerow([
+            'S.No','Booking Date','Project','SPG/Praneeth','Token','Buyer Name','Sale Person Name','CRM Name','SOL',
+            'Type of Sale','Land (sq yards)','SBUA (sq feet)','Facing','Base sq ft price','Amenities and Premiums',
+            'Total Sale Price','Amount Received','Balance Amount','Balance to be received by plan approval','Notes',
+            'Balance to be received during execution'
+        ])
+        for r in rows:
+            r = list(r)
+            # currency fields by index in SELECT: 13,14,15,16,17,18,20
+            for idx in (13,14,15,16,17,18,20):
+                r[idx] = format_currency_csv(r[idx])
+            writer.writerow(r)
+        data = text.getvalue().encode('utf-8')
+        bio = BytesIO(data)
+        bio.seek(0)
+        uname = (user.username if user else 'user')
+        ts = datetime.today().strftime('%Y%m%d-%H%M%S')
+        return send_file(bio, mimetype='text/csv', as_attachment=True, download_name=f'{uname}_my_sales_{ts}.csv')
     finally:
         conn.close()
 
@@ -346,13 +380,13 @@ def crm_edit(rowid):
             # Recompute calculated fields (updated formula)
             base = clean_number(data.get('base_sqft_price'))
             prem = clean_number(data.get('amenties_and_premiums'))
-            sbua = clean_number(data.get('sbua_sqft'))
             land = clean_number(data.get('land_sqyards'))
+            sbua = land * 13.5
             amt_received = clean_number(data.get('amount_received'))
             tos = (data.get('type_of_sale') or '').upper()
             total_sale_price, balance_amount, by_plan = compute_totals(base, prem, sbua, amt_received, tos)
-            sets += ["total_sale_price=?","balance_amount=?","balance_tobe_received_by_plan_approval=?"]
-            vals += [total_sale_price, balance_amount, by_plan]
+            sets += ["sbua_sqft=?","total_sale_price=?","balance_amount=?","balance_tobe_received_by_plan_approval=?"]
+            vals += [sbua, total_sale_price, balance_amount, by_plan]
             # Enforce ownership
             vals.append(user.username)
             vals.append(rowid)
@@ -416,11 +450,13 @@ def admin_dashboard():
         cur.execute("SELECT value FROM sale_type_options ORDER BY value")
         tos_opts = [r[0] for r in cur.fetchall()]
 
-        # Detailed rows (not grouped); show all active rows by default
+        # Detailed rows with all required columns for dashboard order
         query = (
-            "SELECT rowid, booking_date, s_no, crm_name, sale_person_name, buyer_name, project, spg_praneeth, "
-            "type_of_sale, total_sale_price, amount_received, balance_amount, "
-            "balance_tobe_received_by_plan_approval, balance_tobe_received_during_exec "
+            "SELECT rowid, "
+            "s_no, booking_date, project, spg_praneeth, token, buyer_name, sale_person_name, crm_name, sol, "
+            "type_of_sale, land_sqyards, sbua_sqft, facing, base_sqft_price, amenties_and_premiums, "
+            "total_sale_price, amount_received, balance_amount, balance_tobe_received_by_plan_approval, notes, "
+            "balance_tobe_received_during_exec "
             "FROM sale_details WHERE 1=1"
         )
         params = []
@@ -436,7 +472,32 @@ def admin_dashboard():
             query += " AND spg_praneeth = ?"; params.append(spg)
         if tos:
             query += " AND type_of_sale = ?"; params.append(tos)
-        query += " ORDER BY (booking_date IS NULL) ASC, booking_date DESC, s_no DESC"
+        # Sorting
+        sort_by = request.args.get('sort_by','booking_date')
+        sort_dir = request.args.get('sort_dir','desc').lower()
+        allowed = {
+            's_no':'s_no','booking_date':'booking_date','project':'project','spg_praneeth':'spg_praneeth','token':'token',
+            'buyer_name':'buyer_name','sale_person_name':'sale_person_name','crm_name':'crm_name','sol':'sol','type_of_sale':'type_of_sale',
+            'land_sqyards':'land_sqyards','sbua_sqft':'sbua_sqft','facing':'facing','base_sqft_price':'base_sqft_price',
+            'amenties_and_premiums':'amenties_and_premiums','total_sale_price':'total_sale_price','amount_received':'amount_received',
+            'balance_amount':'balance_amount','balance_tobe_received_by_plan_approval':'balance_tobe_received_by_plan_approval',
+            'notes':'notes','balance_tobe_received_during_exec':'balance_tobe_received_during_exec'
+        }
+        col = allowed.get(sort_by, 'booking_date')
+        dir_sql = 'DESC' if sort_dir == 'desc' else 'ASC'
+        if col == 'booking_date' and dir_sql == 'DESC':
+            query += " ORDER BY (booking_date IS NULL) ASC, booking_date DESC, s_no DESC"
+        else:
+            query += f" ORDER BY {col} {dir_sql}"
+        # limit rows: default 10, allow 25 or 50
+        try:
+            limit = int(request.args.get('limit') or 10)
+        except:
+            limit = 10
+        if limit not in (10,25,50):
+            limit = 10
+        query += " LIMIT ?"
+        params.append(limit)
         cur.execute(query, tuple(params))
         rows = cur.fetchall()
         cols = [d[0] for d in cur.description]
@@ -445,7 +506,8 @@ def admin_dashboard():
         cur_year = int(datetime.today().strftime('%Y'))
         years = [str(cur_year - i) for i in range(0,3)]
         return render_template('admin_dashboard.html', data=data, filters={'year':year,'month':month,'crm':crm,'sp':sp,'spg':spg,'tos':tos},
-                               crm_opts=crm_opts, sp_opts=sp_opts, spg_opts=spg_opts, tos_opts=tos_opts, years=years)
+                               crm_opts=crm_opts, sp_opts=sp_opts, spg_opts=spg_opts, tos_opts=tos_opts, years=years, limit=limit,
+                               sort_by=col, sort_dir=dir_sql.lower())
     finally:
         conn.close()
 
@@ -462,7 +524,15 @@ def admin_export():
     conn = engine.raw_connection()
     try:
         cur = conn.cursor()
-        query = "SELECT booking_date, crm_name, sale_person_name, spg_praneeth, type_of_sale, total_sale_price FROM sale_details WHERE 1=1"
+        # Use same column set and order as the dashboard table
+        query = (
+            "SELECT "
+            "s_no, booking_date, project, spg_praneeth, token, buyer_name, sale_person_name, crm_name, sol, "
+            "type_of_sale, land_sqyards, sbua_sqft, facing, base_sqft_price, amenties_and_premiums, "
+            "total_sale_price, amount_received, balance_amount, balance_tobe_received_by_plan_approval, notes, "
+            "balance_tobe_received_during_exec "
+            "FROM sale_details WHERE 1=1"
+        )
         params = []
         if year:
             query += " AND strftime('%Y', booking_date) = ?"; params.append(year)
@@ -478,13 +548,27 @@ def admin_export():
             query += " AND type_of_sale = ?"; params.append(tos)
         cur.execute(query, tuple(params))
         rows = cur.fetchall()
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow(['booking_date','crm_name','sale_person_name','spg_praneeth','type_of_sale','total_sale_price'])
+        text = StringIO()
+        writer = csv.writer(text)
+        writer.writerow([
+            'S.No','Booking Date','Project','SPG/Praneeth','Token','Buyer Name','Sale Person Name','CRM Name','SOL',
+            'Type of Sale','Land (sq yards)','SBUA (sq feet)','Facing','Base sq ft price','Amenities and Premiums',
+            'Total Sale Price','Amount Received','Balance Amount','Balance to be received by plan approval','Notes',
+            'Balance to be received during execution'
+        ])
         for r in rows:
+            r = list(r)
+            # currency fields by index in SELECT: 13,14,15,16,17,18,20
+            for idx in (13,14,15,16,17,18,20):
+                r[idx] = format_currency_csv(r[idx])
             writer.writerow(r)
-        output.seek(0)
-        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='dashboard_export.csv')
+        data = text.getvalue().encode('utf-8')
+        bio = BytesIO(data)
+        bio.seek(0)
+        user = current_user()
+        uname = (user.username if user else 'admin')
+        ts = datetime.today().strftime('%Y%m%d-%H%M%S')
+        return send_file(bio, mimetype='text/csv', as_attachment=True, download_name=f'{uname}_dashboard_{ts}.csv')
     finally:
         conn.close()
 
@@ -621,8 +705,11 @@ def admin_new():
             conn.commit()
         finally:
             conn.close()
+        # If AJAX request, return JSON so frontend can append s_no and redirect
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"ok": True, "s_no": int(next_sno)})
         flash('Sale created', 'success')
-        return redirect(url_for('admin_new', saved=1))
+        return redirect(url_for('admin_new', saved=1, s_no=int(next_sno)))
     # GET: provide options, next s_no, and today
     conn = engine.raw_connection()
     spg_opts, tos_opts, next_sno = [], [], 1
@@ -642,12 +729,19 @@ def admin_new():
 @login_required(role='ADMIN')
 def admin_entries():
     user = current_user()
-    sort = request.args.get('sort','date_desc')
-    order_clause = "(booking_date IS NULL) ASC, booking_date DESC, s_no"
-    if sort == 'sno_desc':
-        order_clause = "s_no DESC"
-    elif sort == 'total_desc':
-        order_clause = "total_sale_price DESC"
+    sort_by = request.args.get('sort_by','booking_date')
+    sort_dir = request.args.get('sort_dir','desc').lower()
+    allowed = {
+        's_no':'s_no','booking_date':'booking_date','buyer_name':'buyer_name','sale_person_name':'sale_person_name',
+        'total_sale_price':'total_sale_price','amount_received':'amount_received','balance_amount':'balance_amount',
+        'balance_tobe_received_by_plan_approval':'balance_tobe_received_by_plan_approval','balance_tobe_received_during_exec':'balance_tobe_received_during_exec'
+    }
+    col = allowed.get(sort_by, 'booking_date')
+    dir_sql = 'DESC' if sort_dir == 'desc' else 'ASC'
+    if col == 'booking_date' and dir_sql == 'DESC':
+        order_clause = "(booking_date IS NULL) ASC, booking_date DESC, s_no DESC"
+    else:
+        order_clause = f"{col} {dir_sql}"
     conn = engine.raw_connection()
     rows = []
     try:
@@ -658,7 +752,7 @@ def admin_entries():
             rows.append(dict(zip(cols, r)))
     finally:
         conn.close()
-    return render_template('admin_list.html', rows=rows, user=user, sort=sort)
+    return render_template('admin_list.html', rows=rows, user=user, sort_by=col, sort_dir=dir_sql.lower())
 
 # Admin: Sale detail view
 @app.route('/admin/sales/<int:rowid>')
@@ -807,15 +901,15 @@ def admin_edit(rowid):
                 return float(re.sub(r"[^0-9.-]", "", x or '0') or 0)
             base = cleanf(data.get('base_sqft_price'))
             prem = cleanf(data.get('amenties_and_premiums'))
-            sbua = float(data.get('sbua_sqft') or 0)
             land = cleanf(data.get('land_sqyards'))
+            sbua = land * 13.5
             amt_received = cleanf(data.get('amount_received'))
             total_sale_price = (base + prem) * sbua
             balance_amount = total_sale_price - amt_received
             tos = (data.get('type_of_sale') or '').upper()
             by_plan = balance_amount if tos == 'OTP' else (total_sale_price * 0.20) - balance_amount
-            sets += ["total_sale_price= ?","balance_amount= ?","balance_tobe_received_by_plan_approval= ?"]
-            vals += [total_sale_price, balance_amount, by_plan]
+            sets += ["sbua_sqft= ?","total_sale_price= ?","balance_amount= ?","balance_tobe_received_by_plan_approval= ?"]
+            vals += [sbua, total_sale_price, balance_amount, by_plan]
             vals.append(user.username)
             vals.append(rowid)
             sql = f"UPDATE sale_details SET {', '.join(sets)} WHERE crm_name = ? AND rowid = ?"

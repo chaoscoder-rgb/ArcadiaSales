@@ -19,15 +19,16 @@
   <thead>
     <tr>
       <th>Actions</th>
-      <th>S.No</th>
-      <th>Date</th>
-      <th>Buyer</th>
-      <th>Sale Person</th>
-      <th>Total</th>
-      <th>Amount Received</th>
-      <th>Balance</th>
-      <th>Balance by Plan</th>
-      <th>During Exec</th>
+      {% set next = 'asc' if sort_dir=='desc' else 'desc' %}
+      <th><a href="{{ url_for('admin_entries', sort_by='s_no', sort_dir=(next if sort_by=='s_no' else 'asc')) }}">S.No</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='booking_date', sort_dir=(next if sort_by=='booking_date' else 'desc')) }}">Date</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='buyer_name', sort_dir=(next if sort_by=='buyer_name' else 'asc')) }}">Buyer</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='sale_person_name', sort_dir=(next if sort_by=='sale_person_name' else 'asc')) }}">Sale Person</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='total_sale_price', sort_dir=(next if sort_by=='total_sale_price' else 'desc')) }}">Total</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='amount_received', sort_dir=(next if sort_by=='amount_received' else 'desc')) }}">Amount Received</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='balance_amount', sort_dir=(next if sort_by=='balance_amount' else 'desc')) }}">Balance</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='balance_tobe_received_by_plan_approval', sort_dir=(next if sort_by=='balance_tobe_received_by_plan_approval' else 'desc')) }}">Balance by Plan</a></th>
+      <th><a href="{{ url_for('admin_entries', sort_by='balance_tobe_received_during_exec', sort_dir=(next if sort_by=='balance_tobe_received_during_exec' else 'desc')) }}">During Exec</a></th>
     </tr>
   </thead>
   <tbody>

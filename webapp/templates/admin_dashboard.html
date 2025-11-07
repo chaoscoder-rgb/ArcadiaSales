@@ -22,6 +22,13 @@
         {% endfor %}
       </select>
     </label>
+    <label>Rows
+      <select name="limit">
+        <option value="10" {% if (limit or 10)==10 %}selected{% endif %}>10</option>
+        <option value="25" {% if (limit or 10)==25 %}selected{% endif %}>25</option>
+        <option value="50" {% if (limit or 10)==50 %}selected{% endif %}>50</option>
+      </select>
+    </label>
     <label>Sale Person
       <select name="sale_person_name">
         <option value="">All</option>
@@ -61,36 +68,53 @@
 <table class="table">
   <thead>
     <tr>
-      <th>Date</th>
-      <th>S.No</th>
-      <th>CRM</th>
-      <th>Sale Person</th>
-      <th>Buyer</th>
-      <th>Project</th>
-      <th>SPG/Praneeth</th>
-      <th>Type</th>
-      <th>Total</th>
-      <th>Received</th>
-      <th>Balance</th>
-      <th>Balance by Plan</th>
-      <th>During Exec</th>
+      {% set next = 'asc' if (sort_dir or 'desc')=='desc' else 'desc' %}
+      <th><a href="{{ url_for('admin_dashboard', sort_by='s_no', sort_dir=(next if (sort_by=='s_no') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">S.No</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='booking_date', sort_dir=(next if (sort_by=='booking_date') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Booking Date</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='project', sort_dir=(next if (sort_by=='project') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Project</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='spg_praneeth', sort_dir=(next if (sort_by=='spg_praneeth') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">SPG/Praneeth</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='token', sort_dir=(next if (sort_by=='token') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Token</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='buyer_name', sort_dir=(next if (sort_by=='buyer_name') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Buyer Name</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='sale_person_name', sort_dir=(next if (sort_by=='sale_person_name') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Sale Person Name</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='crm_name', sort_dir=(next if (sort_by=='crm_name') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">CRM Name</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='sol', sort_dir=(next if (sort_by=='sol') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">SOL</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='type_of_sale', sort_dir=(next if (sort_by=='type_of_sale') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Type of Sale</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='land_sqyards', sort_dir=(next if (sort_by=='land_sqyards') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Land (sq yards)</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='sbua_sqft', sort_dir=(next if (sort_by=='sbua_sqft') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">SBUA (sq feet)</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='facing', sort_dir=(next if (sort_by=='facing') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Facing</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='base_sqft_price', sort_dir=(next if (sort_by=='base_sqft_price') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Base sq ft price</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='amenties_and_premiums', sort_dir=(next if (sort_by=='amenties_and_premiums') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Amenities and Premiums</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='total_sale_price', sort_dir=(next if (sort_by=='total_sale_price') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Total Sale Price</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='amount_received', sort_dir=(next if (sort_by=='amount_received') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Amount Received</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='balance_amount', sort_dir=(next if (sort_by=='balance_amount') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Balance Amount</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='balance_tobe_received_by_plan_approval', sort_dir=(next if (sort_by=='balance_tobe_received_by_plan_approval') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Balance to be received by plan approval</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='notes', sort_dir=(next if (sort_by=='notes') else 'asc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Notes</a></th>
+      <th><a href="{{ url_for('admin_dashboard', sort_by='balance_tobe_received_during_exec', sort_dir=(next if (sort_by=='balance_tobe_received_during_exec') else 'desc'), year=filters.year, month=filters.month, crm_name=filters.crm, sale_person_name=filters.sp, spg_praneeth=filters.spg, type_of_sale=filters.tos, limit=limit) }}">Balance to be received during execution</a></th>
     </tr>
   </thead>
   <tbody>
   {% for r in data %}
     <tr>
-      <td>{{ r.booking_date }}</td>
       <td><a href="{{ url_for('admin_sale_detail', rowid=r.rowid) }}">{{ r.s_no }}</a></td>
-      <td>{{ r.crm_name }}</td>
-      <td>{{ r.sale_person_name }}</td>
-      <td>{{ r.buyer_name }}</td>
+      <td>{{ r.booking_date }}</td>
       <td>{{ r.project }}</td>
       <td>{{ r.spg_praneeth }}</td>
+      <td>{{ r.token }}</td>
+      <td>{{ r.buyer_name }}</td>
+      <td>{{ r.sale_person_name }}</td>
+      <td>{{ r.crm_name }}</td>
+      <td>{{ r.sol }}</td>
       <td>{{ r.type_of_sale }}</td>
+      <td>{{ r.land_sqyards }}</td>
+      <td>{{ r.sbua_sqft }}</td>
+      <td>{{ r.facing }}</td>
+      <td><span class="currency" data-value="{{ r.base_sqft_price or 0 }}">{{ r.base_sqft_price or 0 }}</span></td>
+      <td><span class="currency" data-value="{{ r.amenties_and_premiums or 0 }}">{{ r.amenties_and_premiums or 0 }}</span></td>
       <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}">{{ r.total_sale_price or 0 }}</span></td>
       <td><span class="currency" data-value="{{ r.amount_received or 0 }}">{{ r.amount_received or 0 }}</span></td>
       <td><span class="currency" data-value="{{ r.balance_amount or 0 }}">{{ r.balance_amount or 0 }}</span></td>
       <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}">{{ r.balance_tobe_received_by_plan_approval or 0 }}</span></td>
+      <td>{{ r.notes }}</td>
       <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}">{{ r.balance_tobe_received_during_exec or 0 }}</span></td>
     </tr>
   {% endfor %}

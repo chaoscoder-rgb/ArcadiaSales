@@ -41,15 +41,44 @@
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script>
     (function(){
-      const params = new URLSearchParams(window.location.search);
-      if(params.get('saved')==='1'){
-        alert('New record saved successfully.');
-        params.delete('saved');
-        const url = window.location.pathname + (params.toString()?('?'+params.toString()):'');
-        window.history.replaceState({}, document.title, url);
+      function initSavedModal(){
+        const params = new URLSearchParams(window.location.search);
+        function cleanUrl(){
+          params.delete('saved');
+          params.delete('s_no');
+          const url = window.location.pathname + (params.toString()?('?'+params.toString()):'');
+          window.history.replaceState({}, document.title, url);
+        }
+        function showSaleCreatedModal(){
+          const modal = document.getElementById('sale-created-modal');
+          if(!modal) return;
+          const msg = modal.querySelector('.modal-message');
+          const sno = params.get('s_no');
+          msg.textContent = sno ? `Sale created successfully. S.No: ${sno}` : 'Sale created successfully.';
+          modal.classList.add('open');
+          const ok = modal.querySelector('.modal-ok');
+          ok.addEventListener('click', ()=>{ modal.classList.remove('open'); cleanUrl(); }, { once:true });
+        }
+        const isNewPage = ['/admin/new','/crm/new'].includes(window.location.pathname);
+        if(params.get('saved')==='1' && (document.getElementById('allow-saved-modal') || isNewPage)){
+          showSaleCreatedModal();
+        }
+      }
+      if (document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', initSavedModal);
+      } else {
+        initSavedModal();
       }
     })();
   </script>
   {% block scripts %}{% endblock %}
+  <div id="sale-created-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">Success</div>
+      <div class="modal-body"><p class="modal-message">Sale created successfully.</p></div>
+      <div class="modal-actions"><button class="btn modal-ok" type="button">OK</button></div>
+    </div>
+  </div>
+  <div class="print-footer"></div>
 </body>
 </html>

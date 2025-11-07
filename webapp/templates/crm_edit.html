@@ -61,7 +61,8 @@
       <small class="prev"></small>
     </label>
     <label>SBUA (sqft)
-      <input name="sbua_sqft" type="number" step="0.01" value="{{ row.sbua_sqft }}" data-prev="{{ row.sbua_sqft }}">
+      <span id="sbua_display">{{ row.sbua_sqft }}</span>
+      <input type="hidden" name="sbua_sqft" value="{{ row.sbua_sqft }}" data-prev="{{ row.sbua_sqft }}">
       <small class="prev"></small>
     </label>
     <label>Base sqft price

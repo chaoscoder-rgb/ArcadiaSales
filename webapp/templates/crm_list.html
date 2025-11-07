@@ -1,15 +1,8 @@
 {% extends 'base.html' %}
-{% block title %}My Entries - CRM{% endblock %}
+{% block title %}{{ user.username }}'s Entries{% endblock %}
 {% block content %}
-<h1>My Entries</h1>
+<h1>{{ user.username }}'s Entries</h1>
 <div class="card form inline">
-  <label>Sort by
-    <select onchange="location=this.value">
-      <option value="{{ url_for('crm_list', sort='date_desc') }}" {{ 'selected' if sort=='date_desc' }}>Date (newest)</option>
-      <option value="{{ url_for('crm_list', sort='sno_desc') }}" {{ 'selected' if sort=='sno_desc' }}>S.No (desc)</option>
-      <option value="{{ url_for('crm_list', sort='total_desc') }}" {{ 'selected' if sort=='total_desc' }}>Total (desc)</option>
-    </select>
-  </label>
   <a class="btn secondary" href="{{ url_for('crm_export') }}">Export CSV</a>
   <button class="btn secondary" onclick="window.print()">Print</button>
   <span class="spacer"></span>
@@ -21,15 +14,28 @@
   <thead>
     <tr>
       <th>Actions</th>
-      <th>S.No</th>
-      <th>Date</th>
-      <th>Buyer</th>
-      <th>Sale Person</th>
-      <th>Total</th>
-      <th>Amount Received</th>
-      <th>Balance</th>
-      <th>Balance by Plan</th>
-      <th>During Exec</th>
+      {% set next = 'asc' if sort_dir=='desc' else 'desc' %}
+      <th><a href="{{ url_for('crm_list', sort_by='s_no', sort_dir= (next if sort_by=='s_no' else 'asc')) }}">S.No</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='booking_date', sort_dir= (next if sort_by=='booking_date' else 'desc')) }}">Booking Date</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='project', sort_dir= (next if sort_by=='project' else 'asc')) }}">Project</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='spg_praneeth', sort_dir= (next if sort_by=='spg_praneeth' else 'asc')) }}">SPG/Praneeth</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='token', sort_dir= (next if sort_by=='token' else 'desc')) }}">Token</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='buyer_name', sort_dir= (next if sort_by=='buyer_name' else 'asc')) }}">Buyer Name</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='sale_person_name', sort_dir= (next if sort_by=='sale_person_name' else 'asc')) }}">Sale Person Name</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='crm_name', sort_dir= (next if sort_by=='crm_name' else 'asc')) }}">CRM Name</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='sol', sort_dir= (next if sort_by=='sol' else 'asc')) }}">SOL</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='type_of_sale', sort_dir= (next if sort_by=='type_of_sale' else 'asc')) }}">Type of Sale</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='land_sqyards', sort_dir= (next if sort_by=='land_sqyards' else 'desc')) }}">Land (sq yards)</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='sbua_sqft', sort_dir= (next if sort_by=='sbua_sqft' else 'desc')) }}">SBUA (sq feet)</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='facing', sort_dir= (next if sort_by=='facing' else 'asc')) }}">Facing</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='base_sqft_price', sort_dir= (next if sort_by=='base_sqft_price' else 'desc')) }}">Base sq ft price</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='amenties_and_premiums', sort_dir= (next if sort_by=='amenties_and_premiums' else 'desc')) }}">Amenities and Premiums</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='total_sale_price', sort_dir= (next if sort_by=='total_sale_price' else 'desc')) }}">Total Sale Price</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='amount_received', sort_dir= (next if sort_by=='amount_received' else 'desc')) }}">Amount Received</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='balance_amount', sort_dir= (next if sort_by=='balance_amount' else 'desc')) }}">Balance Amount</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='balance_tobe_received_by_plan_approval', sort_dir= (next if sort_by=='balance_tobe_received_by_plan_approval' else 'desc')) }}">Balance to be received by plan approval</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='notes', sort_dir= (next if sort_by=='notes' else 'asc')) }}">Notes</a></th>
+      <th><a href="{{ url_for('crm_list', sort_by='balance_tobe_received_during_exec', sort_dir= (next if sort_by=='balance_tobe_received_during_exec' else 'desc')) }}">Balance to be received during execution</a></th>
     </tr>
   </thead>
   <tbody>
@@ -43,12 +49,24 @@
       </td>
       <td>{{ r.s_no }}</td>
       <td>{{ r.booking_date }}</td>
+      <td>{{ r.project }}</td>
+      <td>{{ r.spg_praneeth }}</td>
+      <td>{{ r.token }}</td>
       <td>{{ r.buyer_name }}</td>
       <td>{{ r.sale_person_name }}</td>
+      <td>{{ r.crm_name }}</td>
+      <td>{{ r.sol }}</td>
+      <td>{{ r.type_of_sale }}</td>
+      <td>{{ r.land_sqyards }}</td>
+      <td>{{ r.sbua_sqft }}</td>
+      <td>{{ r.facing }}</td>
+      <td><span class="currency" data-value="{{ r.base_sqft_price or 0 }}"></span></td>
+      <td><span class="currency" data-value="{{ r.amenties_and_premiums or 0 }}"></span></td>
       <td><span class="currency" data-value="{{ r.total_sale_price or 0 }}"></span></td>
       <td><span class="currency" data-value="{{ r.amount_received or 0 }}"></span></td>
       <td><span class="currency" data-value="{{ r.balance_amount or 0 }}"></span></td>
       <td><span class="currency" data-value="{{ r.balance_tobe_received_by_plan_approval or 0 }}"></span></td>
+      <td>{{ r.notes }}</td>
       <td><span class="currency" data-value="{{ r.balance_tobe_received_during_exec or 0 }}"></span></td>
     </tr>
     {% endfor %}
